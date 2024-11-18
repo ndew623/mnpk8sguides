@@ -1,0 +1,112 @@
+# DC/OS to Kubernetes Guide
+This is not a comprehensive guide to Kubernetes (k8s). It's just a quick way to relate some existing DC/OS knowledge to how things work with k8s.
+This guide focuses on doing things via the command line. K8s does have a web ui dashboard. However, sometimes you will need or want the command line, and if you understand how to work with k8s via the command line, then the dashboard will be fairly easy to figure out.
+
+## Common DC/OS tasks
+1. [Create a service](#create-a-service)
+2. [Get service status](#get-service-status)
+3. [Change a service](#change-a-service)
+4. [Folders](#folders)
+5. [Create a job on a schedule](#create-a-job-on-a-schedule)
+
+# Create a service
+In DC/OS a service is a container running in the cluster with options like version, number of instances, volumes, and resource limits either set with the UI or by editing the JSON for the service.
+With k8s, services are created by putting all of these settings into a config file and then applying that config file. These config files are YAML.
+Here is an example of a k8s config for a service running 3 instances of `fakeserver:5000/someimage:v1.0` with memory and cpu limits and an open port on 8088:
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-new-deployment
+spec:
+  replicas: 3 # <-- 3 instances
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myappcontainer
+        image: fakeserver:5000/someimage:v1.0 # <-- docker image to run
+        ports:
+        - containerPort: 8088 # <-- open port on 8088
+        resources: # <-- resource limits
+          limits:
+            memory: "100Mi"
+            cpu: "1"
+          requests:
+            memory: "100Mi"
+            cpu: "1"
+```
+If you put this in a file called `my-new-service.yaml` and run `kubectl apply -f my-new-service.yaml` it will create the service in the cluster.
+
+## kubectl
+`kubectl` is a command line tool needed to work with k8s clusters. It needs a config file telling it what IP address the cluster is at and how to authenticate with it. Installing and configuring `kubectl` is outside the scope of this guide.
+
+## K8s terminology
+ - the YAML configuration files are called "manifests"
+ - instances in k8s are called replicas (as seen in the example YAML above)
+ - DC/OS and k8s both have "services", but they don't mean exactly the same thing
+   - K8s has "Pods". A Pod usually has one container. Each replica (i.e. instance) is in a separate Pod.
+   - A k8s "Deployment" can manage one or more Pods. The YAML example above describes a Deployment and creates and manages 3 Pods. If one Pod died (maybe the container crashed), the Deployment would try to restore the number of replicas to 3.
+     - You could write a YAML manifest for just a Pod without any deployment. This isn't typical though. If a lone Pod crashed, nothing would restart it.
+   - A "Service" in k8s is like a pointer to a Deployment. Here's an example of a Service manifest:
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp-service
+spec:
+  selector:
+    app: myapp # <-- identifies the Pods to point at by label
+  ports:
+  - protocol: TCP # <-- forwards port 9999 to port 8088
+    port: 9999
+    targetPort: 8088
+  type: ClusterIP # <-- There are several service types, this one is for access from other Pods in the cluster
+```
+   - Running `kubectl apply -f` on this Service manifest would make the Deployment accessible on port 9999 to other Pods running in the cluster.
+   - A k8s Service, Deployment, and Pod together do roughly the same thing that a DC/OS service does.
+
+
+
+# Get service status
+To see if a Deployment is running I can run `kubectl get deployments` and get:
+```
+$ kubectl get deployments
+NAME                 READY   UP-TO-DATE   AVAILABLE   AGE
+my-new-deployment    0/3     3            0           54s
+```
+(`kubectl` usually accepts serveral abreviated names for things. `deployment` or even just `deploy` both work in place of `deployments`)
+
+In this example, 0/3 replicas are ready. That's because I used a fake, example name for the image that k8s can't pull. To see this better I can run `kubectl get pods` (or `pod`) to see the Pods the Deployment is trying to make:
+```
+$ kubectl get pod
+NAME                                  READY   STATUS             RESTARTS      AGE
+my-new-deployment-d9dd96594-577wm     0/1     ImagePullBackOff   0             9m31s
+my-new-deployment-d9dd96594-lw2qc     0/1     ImagePullBackOff   0             9m31s
+my-new-deployment-d9dd96594-tlxww     0/1     ImagePullBackOff   0             9m31s
+
+```
+ImagePullBackoff means it's failing to pull the image.
+
+Some other commands to see what's going on with a Pod or Deployment:
+ - Get more details:
+   - `kubectl describe pod my-new-deployment-d9dd96594-577wm`
+   - `kubectl describe deploy my-new-deployment`
+ - Get the equivalent YAML manifest for what's currently in the cluster:
+   - `kubectl get pod my-new-deployment-d9dd96594-577wm -o yaml`
+   - `kubectl get deploy my-new-deployment -o yaml`
+ - Get logs from the container:
+   - `kubectl logs my-new-deployment-d9dd96594-577wm`
+
+You can also delete things with kubectl:
+`kubectl delete deploy my-new-deployment`
+Pods created by the Deployment will be cleaned up, but any Services pointing to the Deployment would need to be manually deleted.
+
+# Folders
+
+# Create a job on a schedule
