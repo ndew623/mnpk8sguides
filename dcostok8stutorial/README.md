@@ -8,6 +8,6 @@
 2. [Some Kubernetes Terminology](./some-terminology.md)
 3. [Jobs](./jobs.md)
 4. [Container Logs](./logs.md)
-5. [Declartivness](./declarativness.md)
+5. [Why YAML?](./whyyaml.md)
 6. [Namespaces](./namespaces.md)
 7. [Next Steps](./next-steps.md)
