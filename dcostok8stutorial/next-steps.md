@@ -12,7 +12,8 @@ Here are some lists of other topics that may be worth looking into. Each list is
 5. Service Accounts and RBAC
 
 ### Kubernetes Deployment Tools
-1. Kustomize
+1. kubectl - The basics of kubectl are in this guide, but there are other useful things it can do.
+2. Kustomize
 2. Helm
 
 ### New Platform Software
