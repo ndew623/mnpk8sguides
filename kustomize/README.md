@@ -31,6 +31,13 @@ spec:
       containers:
       - image: server:5000/my-image:test
         name: example-container
+        resources:
+          limits:
+            memory: "8Mi"
+            cpu: "250m"
+        env:
+        - name: ENVIRONMENT_VARIABLE_NAME
+          value: ev-value
 ```
 
 This deployment creates one replica running the `server:5000/my-image:test` image.
@@ -97,10 +104,58 @@ metadata:
 spec:
   replicas: 7
   template:
-  spec:
-    containers:
-    - image: my-image:prod
-      name: example-container
+    spec:
+      containers:
+      - image: my-image:prod
+        name: example-container
 ```
 
-...
+The `patches.yaml` file contains a spec for a Deployment, but only for the options that we are replacing. In this case, the container image and number of replicas.
+
+The resource limits and environment variable from the Deployment are not included in this patches.yaml, so they will not be changed.
+
+There a couple of quirks to `patches.yaml`:
+1. `kind: Deployment` and `name: example` could be used to target this patch to our Deployment called example. The `target:` property in the `kustomization.yaml` overrides this.
+  - So `kind:` and `name:` still need to be present, but because of `target:` their values don't matter.
+    - really, with `target:` in the kustomization.yaml you could edit patches.yaml to have `kind: ASDF` and `name: qwerty` and it still works.
+      - i don't fully understand why tbh
+2. We didn't change the container name (`example-container`), but it still has to be included. This is because the `containers:` property is a list, and kustomize will use the `name` field from list elements to identify them.
+
+# Running the Command
+First, `cd envs/prod`.
+
+Then run `kubectl kustomize`.
+
+Kustomize will find the kustomization and patches files and output this:
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: example
+  name: example
+spec:
+  replicas: 7
+  selector:
+    matchLabels:
+      app: example
+  template:
+    metadata:
+      labels:
+        app: example
+    spec:
+      containers:
+      - env:
+        - name: ENVIRONMENT_VARIABLE_NAME
+          value: ev-value
+        image: my-image:prod
+        name: example-container
+        resources:
+          limits:
+            cpu: 250m
+            memory: 8Mi
+```
+
+That's the Deployment from the base folder, but with the replica and image settings from the patches.yaml.
+
+# TODO how to use the output, kustomize applying to the cluster
