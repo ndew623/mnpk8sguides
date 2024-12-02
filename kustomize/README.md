@@ -1,10 +1,10 @@
 # What is Kustomize
 
-Kustomize is locally installed tool.
+Kustomize is a locally installed tool.
 
-It comes built-in to `kubectl`.
+It comes built-in with kubectl.
 
-The `kubectl version` command will output your `kubectl` and Kubernetes server versions, but it should also include the kustomize version that's built in to `kubectl`.
+The `kubectl version` command will output your kubectl and Kubernetes server versions, but it should also include the kustomize version that's built-in to kubectl. (It is also possible to install other versions of kustomize independently of kubectl.)
 
 The purpose of kustomize is to help in using one manifest file across multiple clusters.
 
@@ -42,17 +42,18 @@ spec:
 
 This deployment creates one replica running the `server:5000/my-image:test` image.
 
-But running a single instance of a test image is probably only what you want on a development/research cluster.
+Running a single replica of a test image might be fine for your development/research cluster. But for your production cluster you might want to run 5 replicas, and you might want to run version 4.3.2 of `server:5000/my-image` rather than "test".
 
-For this example, imagine you want the production cluster to run 5 replicas, and you want it to run version 4.3.2 of `server:5000/my-image` rather than "test".
+You could have two seperate manifests. One for the development cluster and for the production cluster.
 
-You could have seperate manifests for the development cluster and for the production cluster.
+Now imagine you have many different deployments, and each deployment is complicated. Also imagine you have 4 or more cluster environments. In this case, you'll have many copies of many manifest files for all of your different deployments on all your different clusters.
 
-But when you have more manifests, that are more complicated, and on more than two clusters, keeping all the different manifests for all the different clusters organized and up-to-date becomes a mess.
+Keeping all of the manifest copies organized and up-to-date with each other becomes impractical quickly.
+
 
 Kustomize lets you have one base manifest shared across all of your clusters. Each cluster has its own kustomization file that specifies just the options that need to be changed from the base manifest.
 
-# How it Works
+# How Kustomize Works
 
 Kustomize needs a specific directory structure, like this:
 ```
@@ -71,10 +72,11 @@ Kustomize needs a specific directory structure, like this:
 
 Side note: sometimes the `base` directory is called `resources`. Sometimes the `envs` directory is called `overlays`.
 
-Under the `base` folder, `deploy.yaml` can just be the Deployment from the example above.
+Under the `base/` folder, `deploy.yaml` will just be the Deployment from the example above.
 
-For this example, `base/kustomization.yaml` is very simple. It just names the base manifests that we'll be using, and in this case there is only one:
+For this example, `base/kustomization.yaml` will be very simple. It will just name the base manifests that we'll be using, and in this case there is only one:
 ```
+$ cat base/kustomize.yaml
 resources:
 - deploy.yaml
 ```
@@ -83,6 +85,7 @@ You can probably tell that `envs/dev` and `envs/prod` will contain the cluster-s
 
 `envs/dev/kustomization.yaml` and `envs/prod/kustomization.yaml` will look the same:
 ```
+$ cat envs/prod/kustomization.yaml
 bases:
 - ../../base
 patches:
@@ -94,10 +97,11 @@ patches:
 
 - `bases` points to the base directory
 - `patches.yaml` ultimately contains the cluster specific settings
-- `target` is used to specify what the settings in `patches.yaml` will be applied to. In this example, we only have a single manifest in bases, but there could be many manifests in a real-use scenario.
+- `target` is used to specify what the settings in `patches.yaml` will be applied to. In this example, we only have a single manifest in `base/`, but there could be many manifests in a real-use scenario.
 
 `envs/prod/patches.yaml` will look like this:
 ```
+$ cat envs/prod/patches.yaml
 kind: Deployment
 metadata:
   name: example
@@ -106,19 +110,19 @@ spec:
   template:
     spec:
       containers:
-      - image: my-image:prod
+      - image: server:5000/my-image:4.3.2
         name: example-container
 ```
 
 The `patches.yaml` file contains a spec for a Deployment, but only for the options that we are replacing. In this case, the container image and number of replicas.
 
-The resource limits and environment variable from the Deployment are not included in this patches.yaml, so they will not be changed.
+The resource limits and environment variable from the original Deployment are not included in this patches.yaml, so they will not be changed.
 
 There a couple of quirks to `patches.yaml`:
 1. `kind: Deployment` and `name: example` could be used to target this patch to our Deployment called example. The `target:` property in the `kustomization.yaml` overrides this.
   - So `kind:` and `name:` still need to be present, but because of `target:` their values don't matter.
     - really, with `target:` in the kustomization.yaml you could edit patches.yaml to have `kind: ASDF` and `name: qwerty` and it still works.
-      - i don't fully understand why tbh
+      - (i don't fully understand why tbh)
 2. We didn't change the container name (`example-container`), but it still has to be included. This is because the `containers:` property is a list, and kustomize will use the `name` field from list elements to identify them.
 
 # Running the Command
@@ -156,6 +160,20 @@ spec:
             memory: 8Mi
 ```
 
-That's the Deployment from the base folder, but with the replica and image settings from the patches.yaml.
+That's the Deployment from the base folder, but with the replica and image settings from patches.yaml.
 
-# TODO how to use the output, kustomize applying to the cluster
+Kustomize dumps its output to the console. This gives you a couple of options on how to use it.
+
+Write the output to a file:
+```
+kubectl kustomize > example-deployment-prod.yaml
+```
+which can also be done with the `-o` option:
+```
+kubectl kustomize -o example-deployment-prod.yaml
+```
+
+You can also send the output directly to `kubectl apply`. A `-` character to `kubectl apply -f` tells it to read from stdin:
+```
+kubectl kustomize | kubectl apply -f -
+```
