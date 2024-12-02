@@ -1,4 +1,4 @@
-# Customizing a Helm Chart
+# Customize a Chart
 
 Helm charts come with a lot of default settings for things like replica counts, namespaces, default passwords, and more.
 
