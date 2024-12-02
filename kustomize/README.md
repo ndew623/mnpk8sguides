@@ -185,6 +185,8 @@ kubectl apply -k <patches directory>
 ```
 which does the same thing.
 
+As you can probably guess, `kubectl kustomize | kubectl delete -f -` or `kubectl delete -k <dir>` will cleanup any resources that were created.
+
 # More Kustomize
 
 This is a simple example and overview of the basic concepts.
