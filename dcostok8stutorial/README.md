@@ -1,4 +1,4 @@
-# MnP K8s guide
+# MnP DCOS to K8s Guide
 
 A guide to some basic Kubernetes concepts, specifically designed for the MnP to assist with transitioning to the new platform.
 
