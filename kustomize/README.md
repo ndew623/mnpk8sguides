@@ -162,6 +162,7 @@ spec:
 
 That's the Deployment from the base folder, but with the replica and image settings from patches.yaml.
 
+## Using the Output
 Kustomize dumps its output to the console. This gives you a couple of options on how to use it.
 
 Write the output to a file:
@@ -177,3 +178,19 @@ You can also send the output directly to `kubectl apply`. A `-` character to `ku
 ```
 kubectl kustomize | kubectl apply -f -
 ```
+
+There is also:
+```
+kubectl apply -k <patches directory>
+```
+which does the same thing.
+
+# More Kustomize
+
+This is a simple example and overview of the basic concepts.
+
+Kustomize has a lot of other options and features.
+
+The official documentation is [here](https://kubectl.docs.kubernetes.io/references/kustomize/).
+
+It's likely that not everything in the documentation will be useful to you. However, I still recommend looking it over in some detail to get a sense of everything kustomize can do.
