@@ -1,5 +1,11 @@
 # MnP Helm Guide
 
+## Why Learn Helm?
+
+Much of the new software in new platform is deployed with helm.
+
+---
+
 Each part is meant to be read in order.
 
 1. [Intro/Installing a Chart](./install-a-chart.md)

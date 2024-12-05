@@ -8,6 +8,9 @@ The `kubectl version` command will output your kubectl and Kubernetes server ver
 
 The purpose of kustomize is to help in using one manifest file across multiple clusters.
 
+## Why Learn Kustomize?
+The new platform involves more external, open-source software. Part of maintenance will be keeping the software up-to-date by deploying new versions. Much of the software in the new platform is deployed using kustomize.
+
 # Hypothetical Example
 
 Imagine you have this deployment:
