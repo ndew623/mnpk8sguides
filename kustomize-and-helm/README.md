@@ -11,6 +11,7 @@ Helm:
 - Customization implemented with templates and values.yaml files.
   - Templates can implement some logic and text processing.
   - Values.yaml files can only change things that the templates' author chose not to "hardcode".
+
 Kustomize:
 - No features for packaging or distrubuting anything.
 - Customization implemented with patch files.
@@ -57,6 +58,7 @@ Start with a directory structure for kustomize:
 
 If you read the [kustomize guide](../kustomize/README.md), you saw a `base/kustomization.yaml` that simply pointed to the "base" manifests like:
 ```
+$ cat base/kustomization.yaml
 resources:
 - some-manifest.yaml
 - some-other-manifest.yaml
@@ -66,6 +68,7 @@ In our case, we don't have any manifests in our base folder, because we want to 
 
 So our `base/kustomization.yaml` file should look something like this:
 ```
+$ cat base/kustomization.yaml
 helmCharts:
 - releaseName: my-nginx
   name: nginx
@@ -75,6 +78,7 @@ helmCharts:
 
 This kustomization file specifies a helm chart, and a repo/chart name to pull. As you can see this is an example with a fake url and version. If you want to follow along with this example and see it work, I recommend copying the Helm chart from the [Helm guide](../helm/create-a-chart.md) into a `base/charts-dir/nginx` folder and changing `kustomization.yaml` to look like this:
 ```
+$ cat base/kustomization.yaml
 helmGlobals:
   chartHome: charts-dir
 helmCharts:
